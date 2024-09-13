@@ -827,8 +827,8 @@ if StartBtn :
             else:
                 data = {
                     "gpt_description_prompt": st.session_state.DescPrompt,
-                    "make_instrumental": st.session_state.Instrumental,
-                    "mv": st.session_state['model_name'] if "model_name" in st.session_state else "chirp-v3-0",
+                    # "make_instrumental": st.session_state.Instrumental,
+                    "mv": st.session_state['model_name'] if "model_name" in st.session_state else "chirp-v3-5",
                     "prompt": ""
                 }
                 print(data)
