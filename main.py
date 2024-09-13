@@ -34,14 +34,13 @@ from sqlite import SqliteTool
 
 suno_sqlite = SqliteTool()
 
-st.set_page_config(page_title="SunoAPI AI Music Generator",
+st.set_page_config(page_title="Tommy Jukebox Music Generator",
                    page_icon="🎵",
                    layout="wide",
                    initial_sidebar_state="collapsed",
                    menu_items={
-                       'Report a bug': "https://github.com/SunoApi/SunoApi/issues",
-                       'About': "SunoAPI AI Music Generator is a free AI music generation software, calling the existing API interface to achieve AI music generation. If you have any questions, please visit our website url address: https://sunoapi.net\n\nDisclaimer: Users voluntarily input their account information that has not been recharged to generate music. Each account can generate five songs for free every day, and we will not use them for other purposes. Please rest assured to use them! If there are 10000 users, the system can generate 50000 songs for free every day. Please try to save usage, as each account can only generate five songs for free every day. If everyone generates more than five songs per day, it is still not enough. The ultimate goal is to keep them available for free generation at any time when needed.\n\n"
-                   })
+                        'About': "Tommy Jukebox is a free music generator. Use our interface to create any music for free."
+                  })
 
 hide_streamlit_style = """
 <style>#root > div:nth-child(1) > div > div > div > div > section > div {padding-top: 2rem;}</style>
@@ -95,6 +94,9 @@ def i18n(key):
 
 st.session_state["page"] = 1
 st.session_state["click_image"] = False
+
+
+#Pavel - disable sidebar
 
 # with st.sidebar:
 #     selected = option_menu(None, [i18n("Music Song Create"), i18n("Music Share Square"), i18n("Music Project Readme"),i18n("Visit Official WebSite")],icons=['music-note', 'music-note-beamed', 'music-note-list'], menu_icon="cast", default_index=0)
@@ -276,130 +278,133 @@ with container.container():
         Custom = cols[0].toggle(i18n("Custom"), True)
     else:
         Custom = cols[0].toggle(i18n("Custom"))
-    st.session_state.TuGeYue = False
-    TuGeYue = cols[1].toggle(i18n("Images TuGeYue Music"))
-    st.session_state.YueShengQu = False
-    YueShengQu = cols[2].toggle(i18n("Upload Audio Music"))
+    
+    
+    #Pavel
+    # st.session_state.TuGeYue = False
+    # TuGeYue = cols[1].toggle(i18n("Images TuGeYue Music"))
+    # st.session_state.YueShengQu = False
+    # YueShengQu = cols[2].toggle(i18n("Upload Audio Music"))
 
-    if TuGeYue and st.session_state.DescPrompt == "" and st.session_state['prompt_input'] == "":
-        st.session_state.TuGeYue = True
-        # print(st.session_state.TuGeYue)
-        # 设置文件上传的配置
-        # st.set_option('deprecation.showfileUploaderEncoding', False)
-        upload_folder = Path("images/upload")
-        upload_folder.mkdir(exist_ok=True)
-        file_size_limit = 1024 * 1024 * 3  # 3MB
-        uploaded_file = container.file_uploader(i18n("Images TuGeYue Upload"), type=['bmp', 'webp', 'png', 'jpg', 'jpeg'], help=i18n("Images TuGeYue Help"), accept_multiple_files=False)
+    # if TuGeYue and st.session_state.DescPrompt == "" and st.session_state['prompt_input'] == "":
+    #     st.session_state.TuGeYue = True
+    #     # print(st.session_state.TuGeYue)
+    #     # 设置文件上传的配置
+    #     # st.set_option('deprecation.showfileUploaderEncoding', False)
+    #     upload_folder = Path("images/upload")
+    #     upload_folder.mkdir(exist_ok=True)
+    #     file_size_limit = 1024 * 1024 * 3  # 3MB
+    #     uploaded_file = container.file_uploader(i18n("Images TuGeYue Upload"), type=['bmp', 'webp', 'png', 'jpg', 'jpeg'], help=i18n("Images TuGeYue Help"), accept_multiple_files=False)
 
-        if uploaded_file is not None and not st.session_state['disabled_state']:
-            if uploaded_file.size > file_size_limit:
-                placeholder.error(i18n("Upload Images Error") + f"{file_size_limit / (1024 * 1024)}MB")
-            else:
-                file_ext = uploaded_file.type.split("/")[1]
-                filename = f"{time.time()}.{file_ext}"
-                my_bar = container.progress(0)
-                bytes_data = uploaded_file.read()
-                # container.write(bytes_data)
-                with open(upload_folder / filename, "wb") as f:
-                    f.write(bytes_data)
-                my_bar.progress(100)
-                image_url = ""
-                if "s3.bitiful.net" in S3_WEB_SITE_URL:
-                    image_url = put_upload_file(S3_WEB_SITE_URL, filename, S3_ACCESSKEY_ID, S3_SECRETKEY_ID, bytes_data)
-                elif S3_WEB_SITE_URL != "https://res.sunoapi.net":
-                    image_url = f"{S3_WEB_SITE_URL}/images/upload/{filename}"
-                elif S3_WEB_SITE_URL == "https://res.sunoapi.net":
-                    image_url = f"https://sunoapi.net/images/upload/{filename}"
-                else:
-                    image_url = "http://localhost:8501/images/upload/{filename}"
-                if "detail" in image_url:
-                    placeholder.error(i18n("Analytics Images Error") + image_url["detail"])
-                else:
-                    placeholder.success(i18n("Upload Images Success"))
-                    my_bar.empty()
-                    try:
-                        headers = {"Authorization": f"Bearer {OPENAI_API_KEY}","Content-Type": "application/json"}
-                        requests.packages.urllib3.disable_warnings()
-                        resp = requests.post(
-                            url=f"{OPENAI_BASE_URL}/v1/chat/completions",
-                            headers=headers,
-                            verify=False,
-                            json={
-                                    "messages": [
-                                        {
-                                            "role": "user",
-                                            "content": [
-                                                {
-                                                    "type": "text",
-                                                    "text": i18n("Upload Images Analytics")
-                                                },
-                                                {
-                                                    "type": "image_url",
-                                                    "image_url": {
-                                                        "url": image_url #"https://sunoapi.net/images/upload/1714682704.4356673.jpeg" 
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "max_tokens": 1000,
-                                    "temperature": 1,
-                                    "top_p": 1,
-                                    "n": 1,
-                                    "stream": False,
-                                    "presence_penalty": 0,
-                                    "frequency_penalty": 0,
-                                    "model": "gpt-4o"
-                                }
-                        )
-                        if resp.status_code != 200:
-                            placeholder.error(i18n("Analytics Images Error") + f"{resp.text}")
-                        else:
-                            print(local_time() + f" ***gpt-4o image_url -> {image_url} content -> {resp.text} ***\n")
-                            content = resp.json()["choices"][0]["message"]["content"].strip()
-                            if Custom:
-                                st.session_state['prompt_input'] = content
-                            else:
-                                st.session_state.DescPrompt = content
-                            placeholder.success(i18n("Analytics Images Success"))
-                    except Exception as e:
-                        placeholder.error(i18n("Analytics Images Error") + f"{str(e)}")
-    # else:
-    #     st.session_state['clips_0'] = ""
-    #     st.session_state['clips_1'] = ""
+    #     if uploaded_file is not None and not st.session_state['disabled_state']:
+    #         if uploaded_file.size > file_size_limit:
+    #             placeholder.error(i18n("Upload Images Error") + f"{file_size_limit / (1024 * 1024)}MB")
+    #         else:
+    #             file_ext = uploaded_file.type.split("/")[1]
+    #             filename = f"{time.time()}.{file_ext}"
+    #             my_bar = container.progress(0)
+    #             bytes_data = uploaded_file.read()
+    #             # container.write(bytes_data)
+    #             with open(upload_folder / filename, "wb") as f:
+    #                 f.write(bytes_data)
+    #             my_bar.progress(100)
+    #             image_url = ""
+    #             if "s3.bitiful.net" in S3_WEB_SITE_URL:
+    #                 image_url = put_upload_file(S3_WEB_SITE_URL, filename, S3_ACCESSKEY_ID, S3_SECRETKEY_ID, bytes_data)
+    #             elif S3_WEB_SITE_URL != "https://res.sunoapi.net":
+    #                 image_url = f"{S3_WEB_SITE_URL}/images/upload/{filename}"
+    #             elif S3_WEB_SITE_URL == "https://res.sunoapi.net":
+    #                 image_url = f"https://sunoapi.net/images/upload/{filename}"
+    #             else:
+    #                 image_url = "http://localhost:8501/images/upload/{filename}"
+    #             if "detail" in image_url:
+    #                 placeholder.error(i18n("Analytics Images Error") + image_url["detail"])
+    #             else:
+    #                 placeholder.success(i18n("Upload Images Success"))
+    #                 my_bar.empty()
+    #                 try:
+    #                     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}","Content-Type": "application/json"}
+    #                     requests.packages.urllib3.disable_warnings()
+    #                     resp = requests.post(
+    #                         url=f"{OPENAI_BASE_URL}/v1/chat/completions",
+    #                         headers=headers,
+    #                         verify=False,
+    #                         json={
+    #                                 "messages": [
+    #                                     {
+    #                                         "role": "user",
+    #                                         "content": [
+    #                                             {
+    #                                                 "type": "text",
+    #                                                 "text": i18n("Upload Images Analytics")
+    #                                             },
+    #                                             {
+    #                                                 "type": "image_url",
+    #                                                 "image_url": {
+    #                                                     "url": image_url #"https://sunoapi.net/images/upload/1714682704.4356673.jpeg" 
+    #                                                 }
+    #                                             }
+    #                                         ]
+    #                                     }
+    #                                 ],
+    #                                 "max_tokens": 1000,
+    #                                 "temperature": 1,
+    #                                 "top_p": 1,
+    #                                 "n": 1,
+    #                                 "stream": False,
+    #                                 "presence_penalty": 0,
+    #                                 "frequency_penalty": 0,
+    #                                 "model": "gpt-4o"
+    #                             }
+    #                     )
+    #                     if resp.status_code != 200:
+    #                         placeholder.error(i18n("Analytics Images Error") + f"{resp.text}")
+    #                     else:
+    #                         print(local_time() + f" ***gpt-4o image_url -> {image_url} content -> {resp.text} ***\n")
+    #                         content = resp.json()["choices"][0]["message"]["content"].strip()
+    #                         if Custom:
+    #                             st.session_state['prompt_input'] = content
+    #                         else:
+    #                             st.session_state.DescPrompt = content
+    #                         placeholder.success(i18n("Analytics Images Success"))
+    #                 except Exception as e:
+    #                     placeholder.error(i18n("Analytics Images Error") + f"{str(e)}")
+    # # else:
+    # #     st.session_state['clips_0'] = ""
+    # #     st.session_state['clips_1'] = ""
 
-    if YueShengQu and st.session_state.DescPrompt == "" and st.session_state['prompt_input'] == "":
-        st.session_state.YueShengQu = True
-        # print(st.session_state.YueShengQu)
-        # 设置文件上传的配置
-        # st.set_option('deprecation.showfileUploaderEncoding', False)
-        upload_folder = Path("audios/upload")
-        upload_folder.mkdir(exist_ok=True)
-        file_size_limit = 1024 * 1024 * 3  # 3MB
-        uploaded_audio = container.file_uploader(i18n("Upload Audio Files"), type=['mp3', 'wav'], help=i18n("Upload Audio Help"), accept_multiple_files=False)
+    # if YueShengQu and st.session_state.DescPrompt == "" and st.session_state['prompt_input'] == "":
+    #     st.session_state.YueShengQu = True
+    #     # print(st.session_state.YueShengQu)
+    #     # 设置文件上传的配置
+    #     # st.set_option('deprecation.showfileUploaderEncoding', False)
+    #     upload_folder = Path("audios/upload")
+    #     upload_folder.mkdir(exist_ok=True)
+    #     file_size_limit = 1024 * 1024 * 3  # 3MB
+    #     uploaded_audio = container.file_uploader(i18n("Upload Audio Files"), type=['mp3', 'wav'], help=i18n("Upload Audio Help"), accept_multiple_files=False)
 
-        if uploaded_audio is not None and not st.session_state['disabled_state']:
-            if uploaded_audio.size > file_size_limit:
-                placeholder.error(i18n("Upload Audio Error") + f"{file_size_limit / (1024 * 1024)}MB")
-            else:
-                file_ext = uploaded_audio.type.split("/")[1]
-                filename = f"{time.time()}.mp3"
-                my_bar = container.progress(0)
-                bytes_data = uploaded_audio.read()
-                # container.write(bytes_data)
-                with open(upload_folder / filename, "wb") as f:
-                    f.write(bytes_data)
-                my_bar.progress(10)
-                token = get_random_token()
-                audio_id = suno_upload_audio(uploaded_audio.name, bytes_data, token, my_bar)
-                if "detail" in audio_id:
-                    placeholder.error(i18n("Analytics Audio Error") + audio_id["detail"])
-                    my_bar.empty()
-                else:
-                    fetch_feed(audio_id.split(","), token)
-                    my_bar.progress(100)
-                    placeholder.success(i18n("Upload Audio Success"))
-                    my_bar.empty()
+    #     if uploaded_audio is not None and not st.session_state['disabled_state']:
+    #         if uploaded_audio.size > file_size_limit:
+    #             placeholder.error(i18n("Upload Audio Error") + f"{file_size_limit / (1024 * 1024)}MB")
+    #         else:
+    #             file_ext = uploaded_audio.type.split("/")[1]
+    #             filename = f"{time.time()}.mp3"
+    #             my_bar = container.progress(0)
+    #             bytes_data = uploaded_audio.read()
+    #             # container.write(bytes_data)
+    #             with open(upload_folder / filename, "wb") as f:
+    #                 f.write(bytes_data)
+    #             my_bar.progress(10)
+    #             token = get_random_token()
+    #             audio_id = suno_upload_audio(uploaded_audio.name, bytes_data, token, my_bar)
+    #             if "detail" in audio_id:
+    #                 placeholder.error(i18n("Analytics Audio Error") + audio_id["detail"])
+    #                 my_bar.empty()
+    #             else:
+    #                 fetch_feed(audio_id.split(","), token)
+    #                 my_bar.progress(100)
+    #                 placeholder.success(i18n("Upload Audio Success"))
+    #                 my_bar.empty()
 
     
     if Custom:
@@ -473,27 +478,28 @@ with container.container():
         st.session_state.DescPrompt = DescPrompt
         # print(st.session_state.DescPrompt)
 
-with container.container():
-    cols = container.columns(2)
+#Pavel
+# with container.container():
+#     cols = container.columns(2)
 
-    st.session_state.Instrumental = False
-    instrumental = cols[0].checkbox(i18n("Instrumental"), help=i18n("Instrumental Help"))
-    if instrumental:
-        st.session_state.Instrumental = True
-        # print(st.session_state.Instrumental)
-    else:
-        st.session_state.Instrumental = False
-        # print(st.session_state.Instrumental)
+#     st.session_state.Instrumental = False
+#     instrumental = cols[0].checkbox(i18n("Instrumental"), help=i18n("Instrumental Help"))
+#     if instrumental:
+#         st.session_state.Instrumental = True
+#         # print(st.session_state.Instrumental)
+#     else:
+#         st.session_state.Instrumental = False
+#         # print(st.session_state.Instrumental)
 
 
-    st.session_state.Private = False
-    private = cols[1].checkbox(i18n("Private"), help=i18n("Private Help"))
-    if private:
-        st.session_state.Private = True
-        # print(st.session_state.Private)
-    else:
-        st.session_state.Private = False
-        # print(st.session_state.Private)
+#     st.session_state.Private = False
+#     private = cols[1].checkbox(i18n("Private"), help=i18n("Private Help"))
+#     if private:
+#         st.session_state.Private = True
+#         # print(st.session_state.Private)
+#     else:
+#         st.session_state.Private = False
+#         # print(st.session_state.Private)
 
 def continue_at_change():
     st.session_state['continue_at'] = st.session_state['continue_at_change']
@@ -504,10 +510,17 @@ if st.session_state['continue_at'] and st.session_state['continue_clip_id']:
     container2.text_input(label=i18n("Extend From"), value=st.session_state['continue_at'], placeholder="", max_chars=6, help=i18n("Extend From Help"), key="continue_at_change", on_change=continue_at_change)
     container2.text_input(label=i18n("Extend From Clip"), value=st.session_state['continue_clip_id'], placeholder="", max_chars=36, help="")
 
-container2 = col2.container(border=True)
-options1 = container2.multiselect(i18n("Select Model"), ["chirp-v3-0", "chirp-v3-5"], ["chirp-v3-0"] if not st.session_state['model_name'] else st.session_state['model_name'].split(","), placeholder=i18n("Select Model Placeholder"), help=i18n("Select Model Help"), max_selections=1)
-st.session_state['model_name'] = ''.join(str(opts) for opts in options1)
-# print(st.session_state['model_name'])
+
+# Ensure model_name is always set to "chirp-v3-5"
+st.session_state['model_name'] = "chirp-v3-5"
+
+
+#Pavel - disable the SelectModel
+
+# container2 = col2.container(border=True)
+# options1 = container2.multiselect(i18n("Select Model"), ["chirp-v3-0", "chirp-v3-5"], ["chirp-v3-0"] if not st.session_state['model_name'] else st.session_state['model_name'].split(","), placeholder=i18n("Select Model Placeholder"), help=i18n("Select Model Help"), max_selections=1)
+# st.session_state['model_name'] = ''.join(str(opts) for opts in options1)
+# # print(st.session_state['model_name'])
 
 container1 = col2.container(border=True)
 
@@ -605,50 +618,53 @@ def localdatetime(str):
 
 container2 = col2.container(border=True)
 
-st.session_state.FetchFeed = False
-FetchFeed = container2.toggle(i18n("FetchFeed"))
 
-if FetchFeed:
-    st.session_state.FetchFeed = True
-    # print(st.session_state.FetchFeed)
+#Pavel - disable Get music clip
+
+# st.session_state.FetchFeed = False
+# FetchFeed = container2.toggle(i18n("FetchFeed"))
+
+# if FetchFeed:
+#     st.session_state.FetchFeed = True
+#     # print(st.session_state.FetchFeed)
         
-    FeedID = container2.text_input(label=i18n("FeedID"), value="", placeholder=i18n("FeedID Placeholder"), max_chars=100, help=i18n("FeedID Help"))
-    st.session_state.FeedID = FeedID
-    # print(st.session_state.FeedID)
+#     FeedID = container2.text_input(label=i18n("FeedID"), value="", placeholder=i18n("FeedID Placeholder"), max_chars=100, help=i18n("FeedID Help"))
+#     st.session_state.FeedID = FeedID
+#     # print(st.session_state.FeedID)
     
-    st.session_state.FeedBtn = False
-    FeedBtn = container2.button(i18n("FeedBtn"))
-    if FeedBtn:
-        st.session_state.FeedBtn = True
-        if FeedID == "":
-            placeholder.error(i18n("FetchFeed FeedID Empty"))
-        elif "add" in FeedID:
-            for item in FeedID.split(" ")[1].split(","):
-                result = suno_sqlite.operate_one("update music set private=0 where aid=?", (item,))
-                placeholder.success(i18n("FetchFeed Success") + item)
-        elif "del" in FeedID:
-            for item in FeedID.split(" ")[1].split(","):
-                result = suno_sqlite.operate_one("update music set private=1 where aid=?", (item,))
-                placeholder.success(i18n("FetchFeed Success") + item)
-        elif len(FeedID) >= 36:
-           FeedIDs = FeedID.split(",")
-           token = get_random_token()
-           fetch_feed(FeedIDs, token)
-        else:
-           FeedIDs = FeedID*1
-           count = 0
-           for i in range(int(FeedIDs), -1, -1):
-               print(i, end=" ")
-               token = get_random_token()
-               fetch_feed(str(i), token)
-               #time.sleep(3)
-               count += 1
-               if count % 5 == 0:
-                   print(end="\n")
-                   #time.sleep(5)
-    else:
-        st.session_state.FeedBtn = False
-        # print(st.session_state.FeedBtn)
+#     st.session_state.FeedBtn = False
+#     FeedBtn = container2.button(i18n("FeedBtn"))
+#     if FeedBtn:
+#         st.session_state.FeedBtn = True
+#         if FeedID == "":
+#             placeholder.error(i18n("FetchFeed FeedID Empty"))
+#         elif "add" in FeedID:
+#             for item in FeedID.split(" ")[1].split(","):
+#                 result = suno_sqlite.operate_one("update music set private=0 where aid=?", (item,))
+#                 placeholder.success(i18n("FetchFeed Success") + item)
+#         elif "del" in FeedID:
+#             for item in FeedID.split(" ")[1].split(","):
+#                 result = suno_sqlite.operate_one("update music set private=1 where aid=?", (item,))
+#                 placeholder.success(i18n("FetchFeed Success") + item)
+#         elif len(FeedID) >= 36:
+#            FeedIDs = FeedID.split(",")
+#            token = get_random_token()
+#            fetch_feed(FeedIDs, token)
+#         else:
+#            FeedIDs = FeedID*1
+#            count = 0
+#            for i in range(int(FeedIDs), -1, -1):
+#                print(i, end=" ")
+#                token = get_random_token()
+#                fetch_feed(str(i), token)
+#                #time.sleep(3)
+#                count += 1
+#                if count % 5 == 0:
+#                    print(end="\n")
+#                    #time.sleep(5)
+#     else:
+#         st.session_state.FeedBtn = False
+#         # print(st.session_state.FeedBtn)
 
 if st.session_state['continue_at'] and st.session_state['continue_clip_id']:
     StartBtn = col2.button(i18n("Extend Button"), use_container_width=True, type="primary", disabled=False)
